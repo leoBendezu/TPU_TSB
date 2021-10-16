@@ -68,7 +68,6 @@ public class TSBHashTableDA<K, V>  implements Map<K,V>, Cloneable, Serializable 
 
 
 
-
     @Override
     public Object clone() {
         return new Object();
@@ -101,7 +100,24 @@ public class TSBHashTableDA<K, V>  implements Map<K,V>, Cloneable, Serializable 
 
     @Override
     public V put(K key, V value) {
-        return null;
+        if(key == null || value == null) {throw new NullPointerException("put(): Algun parametro fue null"); }
+        int indice = this.h(key);
+
+        
+
+
+    }
+
+    public int ExploracionCuadratica(int indice) {
+
+        for (int j = 0;; j ++ ) {
+            indice = (indice + j*j) % table.length;
+            Entry<K, V> entry = (Entry) this.table[indice];
+            if (!(entry.isClosed()))
+            {
+                return indice;
+            }
+        }
     }
 
     @Override
