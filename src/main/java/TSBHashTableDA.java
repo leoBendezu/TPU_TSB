@@ -1,19 +1,157 @@
 import java.io.Serializable;
-import java.security.Key;
 import java.util.*;
 
-public class TSBHashTableDA<K, V> extends AbstractMap implements Map<K, V>, Cloneable, Serializable {
+public class TSBHashTableDA<K, V>  implements Map<K,V>, Cloneable, Serializable {
 
-    private Map.Entry<K, V> table[];
+
+    private Object table[];
     private int initialCapacity;
+    private final static int MAX_SIZE = Integer.MAX_VALUE;
     private int count;
     private float loadFactor;
 
     private transient Set<K> keySet = null;
-    private transient Set<Map.Entry<K, V>> entrySet = null;
+    private transient Set<Map.Entry<K,V>> entrySet = null;
     private transient Collection<V> values = null;
 
     private transient int modCount;
+
+
+    public TSBHashTableDA(){
+        this(17,0.8f);
+    }
+
+    public TSBHashTableDA(int initialCapacity, float loadFactor) {
+        if(loadFactor <= 0) { loadFactor = 0.8f; }
+        if(initialCapacity <= 0) { initialCapacity = 17;}
+        else
+        {
+            if(initialCapacity > TSBHashTableDA.MAX_SIZE)
+            {
+                initialCapacity = TSBHashTableDA.MAX_SIZE;
+            }
+        }
+
+        this.table = new Object[initialCapacity];
+        for(int i = 0; i  < table.length; i++)
+        {
+            table[i] = new Entry<K,V>();
+        }
+
+        this.initialCapacity = initialCapacity;
+        this.loadFactor = loadFactor;
+        this.count = 0;
+        this.modCount = 0;
+    }
+
+
+    private int h(int k)
+    {
+        return h(k, this.table.length);
+    }
+
+    private int h(K key, int t)
+    {
+        return h(key.hashCode(), t);
+    }
+
+    private int h(K key)
+    {
+        return h(key.hashCode(), this.table.length);
+    }
+
+    private int h(int k, int t)
+    {
+        if(k < 0) k *= -1;
+        return k % t;
+    }
+
+
+
+
+    @Override
+    public Object clone() {
+        return new Object();
+    }
+
+    @Override
+    public int size() {
+        return this.count;
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return (this.count == 0);
+    }
+
+    @Override
+    public boolean containsKey(Object key) {
+        return false;
+    }
+
+    @Override
+    public boolean containsValue(Object value) {
+        return false;
+    }
+
+    @Override
+    public V get(Object key) {
+        return null;
+    }
+
+    @Override
+    public V put(K key, V value) {
+        return null;
+    }
+
+    @Override
+    public V remove(Object key) {
+        return null;
+    }
+
+    @Override
+    public void putAll(Map<? extends K, ? extends V> m) {
+
+    }
+
+    @Override
+    public void clear() {
+
+    }
+
+    @Override
+    public Set<K> keySet()
+    {
+        if(keySet == null)
+        {
+
+            keySet = new KeySet();
+        }
+        return keySet;
+    }
+
+
+    @Override
+    public Collection<V> values()
+    {
+        if(values==null)
+        {
+            values = new ValueCollection();
+        }
+        return values;
+    }
+
+    @Override
+    public Set<Map.Entry<K, V>> entrySet()
+    {
+        if(entrySet == null)
+        {
+            // entrySet = Collections.synchronizedSet(new EntrySet());
+            entrySet = new EntrySet();
+        }
+        return entrySet;
+    }
+
 
 
     private class Entry<K, V> implements Map.Entry<K, V> {
@@ -44,6 +182,10 @@ public class TSBHashTableDA<K, V> extends AbstractMap implements Map<K, V>, Clon
 
         public boolean isTomb() {
             return condition == 2;
+        }
+
+        public void tomb(){
+            this.condition = 2;
         }
 
         @Override
@@ -154,7 +296,7 @@ public class TSBHashTableDA<K, V> extends AbstractMap implements Map<K, V>, Clon
             public boolean hasNext(){
 
                 // variable auxiliar t para simplificar accesos...
-                Map.Entry<K, V> t[] = TSBHashTableDA.this.table;
+                Object t[] = TSBHashTableDA.this.table;
 
                 if(TSBHashTableDA.this.isEmpty()) { return false; }
                 if( currentKey >= t.length){ return false; }
@@ -177,7 +319,7 @@ public class TSBHashTableDA<K, V> extends AbstractMap implements Map<K, V>, Clon
                 {
                     throw new NoSuchElementException("next(): no existe elemento siguiente");
                 }
-                Map.Entry<K, V> t[] = TSBHashTableDA.this.table;
+                Object t[] = TSBHashTableDA.this.table;
 
 
                 for (int i = currentKey +1;i<t.length;i++ ) {
@@ -188,7 +330,7 @@ public class TSBHashTableDA<K, V> extends AbstractMap implements Map<K, V>, Clon
                     }
                 }
                 nextOk = true;
-                return t[currentKey].getKey();
+                return (K) ((Entry)t[currentKey]).getKey();
             }
 
 
@@ -200,7 +342,7 @@ public class TSBHashTableDA<K, V> extends AbstractMap implements Map<K, V>, Clon
                     throw new IllegalStateException("remove(): debe invocar a next() antes de remove()...");
                 }
 
-                Map.Entry < K,V > remover = TSBHashTableDA.this.table[currentKey];
+                Entry<K,V> remover = (Entry<K, V>) TSBHashTableDA.this.table[currentKey];
                 TSBHashTableDA.this.remove(remover.getKey());
 
                 if(lastKey != currentKey)
@@ -294,7 +436,7 @@ public class TSBHashTableDA<K, V> extends AbstractMap implements Map<K, V>, Clon
 
             @Override
             public boolean hasNext() {
-                Map.Entry<K, V> t[] = TSBHashTableDA.this.table;
+                Object t[] = TSBHashTableDA.this.table;
                 if (TSBHashTableDA.this.isEmpty()) {
                     return false;
                 }
@@ -322,7 +464,7 @@ public class TSBHashTableDA<K, V> extends AbstractMap implements Map<K, V>, Clon
                 if(!hasNext()) {
                     throw new NoSuchElementException("next(): no existe el elemento siguiente");
                 }
-                Map.Entry<K,V> t[] = TSBHashTableDA.this.table;
+                Object t[] = TSBHashTableDA.this.table;
 
                 for (int i = current_Entry + 1; i < t.length; i++) {
                     if ( ((Entry<K, V>) t[i]).isClosed() ) {
@@ -333,7 +475,7 @@ public class TSBHashTableDA<K, V> extends AbstractMap implements Map<K, V>, Clon
                 }
 
                 nextOk = true;
-                return t[current_Entry];
+                return (Entry) t[current_Entry];
 
             }
 
@@ -344,7 +486,7 @@ public class TSBHashTableDA<K, V> extends AbstractMap implements Map<K, V>, Clon
                     throw new IllegalStateException("remove(): debe invocar a next() antes de remove()...");
                 }
 
-                Map.Entry < K,V > remover = TSBHashTableDA.this.table[current_Entry];
+                Entry<K,V> remover = (Entry<K, V>) TSBHashTableDA.this.table[current_Entry];
                 TSBHashTableDA.this.remove(remover.getKey());
 
                 if(last_Entry != current_Entry) {
@@ -404,7 +546,7 @@ public class TSBHashTableDA<K, V> extends AbstractMap implements Map<K, V>, Clon
             @Override
             public boolean hasNext() 
             {
-                Map.Entry<K, V> t[] = TSBHashTableDA.this.table;
+               Object t[] = TSBHashTableDA.this.table;
 
                 if(TSBHashTableDA.this.isEmpty()) { return false; }
                 if(currentValue >= t.length) { return false; }
@@ -428,7 +570,7 @@ public class TSBHashTableDA<K, V> extends AbstractMap implements Map<K, V>, Clon
                     throw new NoSuchElementException("next(): no existe elemento siguiente");
                 }
 
-                Map.Entry<K, V> t[] = TSBHashTableDA.this.table;
+                Object t[] = TSBHashTableDA.this.table;
 
                 for (int i = currentValue + 1 ; i < t.length ; i++) {
                     if(((Entry<K,V>) t[i]).isClosed()) {
@@ -440,7 +582,7 @@ public class TSBHashTableDA<K, V> extends AbstractMap implements Map<K, V>, Clon
 
                 next = true;
 
-                return t[currentValue].getValue();
+                return (V) ((Entry)t[currentValue]).getValue();
             }
 
             @Override
@@ -450,8 +592,8 @@ public class TSBHashTableDA<K, V> extends AbstractMap implements Map<K, V>, Clon
                 { 
                     throw new IllegalStateException("remove(): debe invocar a next() antes de remove()");
                 }
-		
-		Map.Entry < K,V > remover = TSBHashTableDA.this.table[currentValue];
+
+                Entry<K,V> remover = (Entry<K, V>) TSBHashTableDA.this.table[currentValue];
                 TSBHashTableDA.this.remove(remover.getKey());
               
                 if(lastValue != currentValue)
