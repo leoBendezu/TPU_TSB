@@ -1,4 +1,5 @@
 import java.io.Serializable;
+import java.security.Key;
 import java.util.*;
 
 public class TSBHashTableDA<K, V> extends AbstractMap implements Map<K, V>, Cloneable, Serializable {
@@ -98,9 +99,133 @@ public class TSBHashTableDA<K, V> extends AbstractMap implements Map<K, V>, Clon
 
     }
 
+
+
     private class KeySet extends AbstractSet<K> {
 
+        public Iterator<K> iterator() {
+            return new KeySetIterator();
+        }
+
+        @Override
+        public int size() {
+            return TSBHashTableDA.this.count;
+        }
+
+        @Override
+        public boolean contains(Object o) {
+            return TSBHashTableDA.this.containsKey(o);
+        }
+
+        @Override
+        public boolean remove(Object o) {
+            return (TSBHashTableDA.this.remove(o) != null);
+        }
+
+        @Override
+        public void clear() {
+            TSBHashTableDA.this.clear();
+        }
+
+        private class KeySetIterator implements Iterator<K>{
+            // índice de la lista actualmente recorrida...
+            private int currentKey;
+
+            // índice de la lista anterior (si se requiere en remove())...
+            private int lastKey;
+
+
+
+            // flag para controlar si remove() está bien invocado...
+            private boolean nextOk;
+
+            // el valor que debería tener el modCount de la tabla completa...
+            private int expectedModCount;
+
+            public KeySetIterator()
+            {
+                currentKey = 0;
+                lastKey = 0;
+                nextOk = false;
+                expectedModCount = TSBHashTableDA.this.modCount;
+            }
+
+            @Override
+            public boolean hasNext(){
+
+                // variable auxiliar t para simplificar accesos...
+                Map.Entry<K, V> t[] = TSBHashTableDA.this.table;
+
+                if(TSBHashTableDA.this.isEmpty()) { return false; }
+                if( currentKey >= t.length){ return false; }
+
+                for (int i = currentKey +1;i<t.length;i++ ) {
+                    if(((Entry<K,V>) t[i]).isClosed()) { return true;}
+                }
+                return false;
+            }
+
+            @Override
+            public K next(){
+                if(TSBHashTableDA.this.modCount != expectedModCount)
+                {
+                    throw new ConcurrentModificationException("next(): La tabla fue modificada durante el recorrido");
+
+                }
+
+                if(!hasNext())
+                {
+                    throw new NoSuchElementException("next(): no existe elemento siguiente");
+                }
+                Map.Entry<K, V> t[] = TSBHashTableDA.this.table;
+
+
+                for (int i = currentKey +1;i<t.length;i++ ) {
+                    if(((Entry<K,V>) t[i]).isClosed()) {
+                        lastKey = currentKey;
+                        currentKey = i;
+                        break;
+                    }
+                }
+                nextOk = true;
+                return t[currentKey].getKey();
+            }
+
+
+            @Override
+            public void remove(){
+
+                if(!nextOk)
+                {
+                    throw new IllegalStateException("remove(): debe invocar a next() antes de remove()...");
+                }
+
+                Map.Entry<K,V> removido = ((Entry<K,V>)TSBHashTableDA.this.table[currentKey]).remove();
+
+                if(lastKey != currentKey)
+                {
+                    currentKey = lastKey;
+                }
+
+                nextOk=false;
+                TSBHashTableDA.this.count--;
+
+                TSBHashTableDA.this.modCount++;
+                expectedModCount++;
+
+            }
+
+
+
+
+
+        }
+
+
+
+
     }
+
 
     private class EntrySet extends AbstractSet<Map.Entry<K, V>> {
 
