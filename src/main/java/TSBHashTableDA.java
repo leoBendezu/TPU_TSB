@@ -33,6 +33,18 @@ public class TSBHashTableDA<K, V> extends AbstractMap implements Map<K, V>, Clon
             this.value = value;
         }
 
+        public boolean isClosed() {
+            return condition == 1;
+        }
+
+        public boolean isOpen() {
+            return condition == 0;
+        }
+
+        public boolean isTomb() {
+            return condition == 2;
+        }
+
         @Override
         public K getKey() {
             return key;
@@ -93,8 +105,53 @@ public class TSBHashTableDA<K, V> extends AbstractMap implements Map<K, V>, Clon
     private class EntrySet extends AbstractSet<Map.Entry<K, V>> {
 
         @Override
-        public Itarator<>
+        public Iterator<Map.Entry<K,V>> itarator() {
+            return new EntrySetIterator();
+        }
 
+
+
+        private class EntrySetIterator implements  Iterator<Map.Entry<K,V>> {
+
+            private int current_Entry;
+            private int last_Entry;
+            private boolean nextOk;
+            private int expected_modCount;
+
+            public EntrySetIterator(){
+                this.current_Entry = 0;
+                this.last_Entry = 0;
+                this.nextOk = false;
+                this.expected_modCount =TSBHashTableDA.this.modCount;
+            }
+
+
+            @Override
+            public boolean hasNext(){
+                Map.Entry<K,V> t[] = TSBHashTableDA.this.table;
+                if(TSBHashTableDA.this.isEmpty()) {return  false;}
+                return current_Entry < t.length;
+            }
+
+            @Override
+            public Map.Entry<K,V> next() {
+
+                if(TSBHashTableDA.this.modCount != expected_modCount)
+                {
+                    throw new ConcurrentModificationException("next(): la tabla fue modificada durante el recorrido");
+                }
+
+                if(!hasNext()) {
+                    throw new NoSuchElementException("next(): no existe el elemento siguiente");
+                }
+                Map.Entry<K,V> t[] = TSBHashTableDA.this.table;
+
+                for(Map.Entry<K,V> entry : t) {
+                    Entry<K,V>  entr
+                }
+
+            }
+        }
     }
 
     private class ValueColeection extends AbstractCollection<V> {
