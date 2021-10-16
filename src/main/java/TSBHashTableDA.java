@@ -359,7 +359,109 @@ public class TSBHashTableDA<K, V> extends AbstractMap implements Map<K, V>, Clon
         }
     }
 
-    private class ValueColeection extends AbstractCollection<V> {
+        private class ValueCollection extends AbstractCollection<V> {
+        
+         @Override
+        public Iterator<V> iterator() 
+        {
+            return new ValueCollectionIterator();
+        }
+        
+        @Override
+        public int size() 
+        {
+            return TSBHashTableDA.this.count;
+        }
+        
+        @Override
+        public boolean contains(Object o) 
+        {
+            return TSBHashTableDA.this.containsValue(o);
+        }
+        
+        @Override
+        public void clear() 
+        {
+            TSBHashTableDA.this.clear();
+        }
+        
+        private class ValueCollectionIterator implements Iterator<V>
+        {
+            private int currentValue;
+            private int lastValue;
+            private boolean next;
+            private int expectedModCount;
 
+            public ValueCollectionIterator()
+            {
+                currentValue = 0;
+                lastValue = 0;
+                next = false;
+                expectedModCount = TSBHashTableDA.this.modCount;
+            }
+
+            @Override
+            public boolean hasNext() 
+            {
+                Map.Entry<K, V> t[] = TSBHashTableDA.this.table;
+
+                if(TSBHashTableDA.this.isEmpty()) { return false; }
+                if(currentValue >= t.length) { return false; }
+
+                for (int i = currentValue + 1 ; i < t.length ; i++) {
+                    if(((Entry<K,V>) t[i]).isClosed()) {return true;}
+                }
+                return false;
+            }
+
+            @Override
+            public V next() 
+            {
+                if(TSBHashTableDA.this.modCount != expectedModCount)
+                {    
+                    throw new ConcurrentModificationException("next(): La tabla fue modificada durante el recorrido");
+                }
+                
+                if(!hasNext()) 
+                {
+                    throw new NoSuchElementException("next(): no existe elemento siguiente");
+                }
+
+                Map.Entry<K, V> t[] = TSBHashTableDA.this.table;
+
+                for (int i = currentValue + 1 ; i < t.length ; i++) {
+                    if(((Entry<K,V>) t[i]).isClosed()) {
+                        lastValue = currentValue;
+                        currentValue = i;
+                        break;
+                    }
+                }
+
+                next = true;
+
+                return t[currentValue].getValue();
+            }
+
+            @Override
+            public void remove() 
+            {
+                if(!next)
+                { 
+                    throw new IllegalStateException("remove(): debe invocar a next() antes de remove()");
+                }
+
+                Map.Entry<K,V> removido = ((Entry<K,V>)TSBHashTableDA.this.table[currentValue]).remove();
+              
+                if(lastValue != currentValue)
+                {
+                    currentValue = lastValue;
+                }
+
+                next = false;
+                TSBHashTableDA.this.count--;
+                TSBHashTableDA.this.modCount++;
+                expectedModCount++;
+            }     
+        }
     }
 }
