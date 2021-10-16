@@ -230,7 +230,7 @@ public class TSBHashTableDATest {
     @Test
     public void testEqualsAndHashcode() {
         TSBHashTableDA<String, Integer> other = new TSBHashTableDA<>();
-        assertTrue(other.equals(table));
+         assertTrue(other.equals(table));
         assertEquals(table.hashCode(), other.hashCode());
         table.put("z", 42);
         assertFalse(other.equals(table));
@@ -253,7 +253,7 @@ public class TSBHashTableDATest {
     }
 
     @Test
-    public void testClone() {
+    public void testClone() throws CloneNotSupportedException {
         addTestData();
         TSBHashTableDA<String, Integer> other = (TSBHashTableDA<String, Integer>) table.clone();
         assertEquals(table, other);
