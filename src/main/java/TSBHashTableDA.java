@@ -105,10 +105,48 @@ public class TSBHashTableDA<K, V> extends AbstractMap implements Map<K, V>, Clon
     private class EntrySet extends AbstractSet<Map.Entry<K, V>> {
 
         @Override
-        public Iterator<Map.Entry<K,V>> itarator() {
+        public Iterator<Map.Entry<K,V>> iterator() {
             return new EntrySetIterator();
         }
 
+        @Override
+        public boolean contains(Object o) {
+            if(o == null) { return false; }
+            if(!(o instanceof Entry)) { return false;}
+
+            Map.Entry<K,V > entry = (Map.Entry<K,V>) o;
+            return TSBHashTableDA.this.containsKey(entry.getKey()) ;
+        }
+
+        @Override
+        public boolean remove(Object o) {
+            if(o == null) { throw new NullPointerException("remove(): parámetro null");}
+            if(!(o instanceof Entry)) { return false; }
+
+            Map.Entry<K,V > entry = (Map.Entry<K,V>) o;
+
+
+            if(TSBHashTableDA.this.remove(entry.getKey()) != null)
+            {
+                TSBHashTableDA.this.count--;
+                TSBHashTableDA.this.modCount++;
+                return true;
+            }
+
+            return false;
+        }
+
+        @Override
+        public int size()
+        {
+            return TSBHashTableDA.this.count;
+        }
+
+        @Override
+        public void clear()
+        {
+            TSBHashTableDA.this.clear();
+        }
 
 
         private class EntrySetIterator implements  Iterator<Map.Entry<K,V>> {
@@ -126,11 +164,25 @@ public class TSBHashTableDA<K, V> extends AbstractMap implements Map<K, V>, Clon
             }
 
 
+
+
             @Override
-            public boolean hasNext(){
-                Map.Entry<K,V> t[] = TSBHashTableDA.this.table;
-                if(TSBHashTableDA.this.isEmpty()) {return  false;}
-                return current_Entry < t.length;
+            public boolean hasNext() {
+                Map.Entry<K, V> t[] = TSBHashTableDA.this.table;
+                if (TSBHashTableDA.this.isEmpty()) {
+                    return false;
+                }
+                if (current_Entry >= t.length) {
+                    return false;
+                }
+
+                for (int i = current_Entry + 1; i < t.length; i++) {
+                    if ( ((Entry<K, V>) t[i]).isClosed() ) {
+                        return true;
+                    }
+                }
+
+                return  false;
             }
 
             @Override
@@ -146,9 +198,36 @@ public class TSBHashTableDA<K, V> extends AbstractMap implements Map<K, V>, Clon
                 }
                 Map.Entry<K,V> t[] = TSBHashTableDA.this.table;
 
-                for(Map.Entry<K,V> entry : t) {
-                    Entry<K,V>  entr
+                for (int i = current_Entry + 1; i < t.length; i++) {
+                    if ( ((Entry<K, V>) t[i]).isClosed() ) {
+                        last_Entry = current_Entry;
+                        current_Entry = i;
+                        break;
+                    }
                 }
+
+                nextOk = true;
+                return t[current_Entry];
+
+            }
+
+            @Override
+            public void remove(){
+                if(!nextOk)
+                {
+                    throw new IllegalStateException("remove(): debe invocar a next() antes de remove()...");
+                }
+
+                Map.Entry<K,V> removido = ((Entry<K,V>)TSBHashTableDA.this.table[current_Entry]).remove();
+
+                if(last_Entry != current_Entry) {
+                    current_Entry = last_Entry;
+                }
+
+                nextOk = false;
+                TSBHashTableDA.this.count --;
+                TSBHashTableDA.this.modCount ++;
+                expected_modCount++;
 
             }
         }
