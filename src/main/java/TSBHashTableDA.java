@@ -95,26 +95,63 @@ public class TSBHashTableDA<K, V>  implements Map<K,V>, Cloneable, Serializable 
 
     @Override
     public V get(Object key) {
+          Entry<K,V> x = this.searchForEntry(key);
+           if(x != null) {
+                return x.getValue();
+           }
+
         return null;
+    }
+
+    public Entry searchForEntry(Object key){
+
+        int indice = this.h( (K) key);
+        for(int j = 0;; j++) {
+            indice = (indice + j * j) % table.length;
+            Entry entry = (Entry) this.table[indice];
+
+            if(entry.isClosed()) {
+                if (entry.getKey().equals(key)) {
+                    return entry;
+                }
+            }
+            if(entry.isOpen() || entry.isTomb()) { return null;}
+        }
     }
 
     @Override
     public V put(K key, V value) {
         if(key == null || value == null) {throw new NullPointerException("put(): Algun parametro fue null"); }
-        int indice = this.h(key);
+        V old = null;
+        Entry<K,V> x = this.searchForEntry(key);
 
-        
+        if( x != null)
+        {
+            old = x.getValue();
+            x.setValue(value);
+        } else {
 
+            int indice = this.h(key);
+            indice = seachForIndex(indice);
+
+
+            Entry<K, V> nuevo = new Entry<>(key, value);
+            this.table[indice] = nuevo;
+            this.count++;
+            this.modCount++;
+        }
+        return old;
 
     }
 
-    public int ExploracionCuadratica(int indice) {
+
+
+    public int seachForIndex(int indice) {
 
         for (int j = 0;; j ++ ) {
-            indice = (indice + j*j) % table.length;
+            indice = (indice + j * j) % table.length;
             Entry<K, V> entry = (Entry) this.table[indice];
-            if (!(entry.isClosed()))
-            {
+            if (!(entry.isClosed())) {
                 return indice;
             }
         }
@@ -126,13 +163,23 @@ public class TSBHashTableDA<K, V>  implements Map<K,V>, Cloneable, Serializable 
     }
 
     @Override
-    public void putAll(Map<? extends K, ? extends V> m) {
-
+    public void putAll(Map<? extends K, ? extends V> m)
+    {
+        for(Map.Entry<? extends K, ? extends V> e : m.entrySet())
+        {
+            put(e.getKey(), e.getValue());
+        }
     }
 
     @Override
     public void clear() {
-
+        this.table = new Object[initialCapacity];
+        for(int i = 0; i  < table.length; i++)
+        {
+            table[i] = new Entry<K,V>();
+        }
+        this.count = 0;
+        this.modCount ++;
     }
 
     @Override
@@ -186,6 +233,7 @@ public class TSBHashTableDA<K, V>  implements Map<K,V>, Cloneable, Serializable 
             }
             this.key = key;
             this.value = value;
+            this.condition = 1;
         }
 
         public boolean isClosed() {
@@ -276,8 +324,9 @@ public class TSBHashTableDA<K, V>  implements Map<K,V>, Cloneable, Serializable 
         }
 
         @Override
-        public boolean remove(Object o) {
-            return (TSBHashTableDA.this.remove(o) != null);
+        public boolean remove(Object key) {
+            if(key == null) { throw new NullPointerException("remove(): parametro null");}
+            return false;
         }
 
         @Override
