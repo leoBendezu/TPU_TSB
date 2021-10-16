@@ -343,7 +343,8 @@ public class TSBHashTableDA<K, V> extends AbstractMap implements Map<K, V>, Clon
                     throw new IllegalStateException("remove(): debe invocar a next() antes de remove()...");
                 }
 
-                Map.Entry<K,V> removido = ((Entry<K,V>)TSBHashTableDA.this.table[current_Entry]).remove();
+                Map.Entry < K,V > remover = TSBHashTableDA.this.table[current_Entry];
+                TSBHashTableDA.this.remove(remover.getKey());
 
                 if(last_Entry != current_Entry) {
                     current_Entry = last_Entry;
