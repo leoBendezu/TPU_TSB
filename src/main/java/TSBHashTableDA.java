@@ -4,7 +4,7 @@ import java.util.*;
 public class TSBHashTableDA<K, V> implements Map<K, V>, Cloneable, Serializable {
 
 
-    private Object table[];
+    public Object table[];
     private int initialCapacity;
     private final static int MAX_SIZE = Integer.MAX_VALUE;
     private int count;
@@ -44,14 +44,11 @@ public class TSBHashTableDA<K, V> implements Map<K, V>, Cloneable, Serializable 
         this.modCount = 0;
     }
 
-
-    private int h(int k) {
-        return h(k, this.table.length);
-    }
-
-    private int h(K key, int t) {
+    private int h(K key, int t)
+    {
         return h(key.hashCode(), t);
     }
+
 
     private int h(K key) {
         return h(key.hashCode(), this.table.length);
@@ -84,6 +81,20 @@ public class TSBHashTableDA<K, V> implements Map<K, V>, Cloneable, Serializable 
 
 
 
+    }
+
+    @Override
+    public int hashCode(){
+        int hc = 5;
+        if(this.isEmpty()) {
+            return hc;
+        }
+        Iterator<Map.Entry<K,V>> i = this.entrySet().iterator();
+        while(i.hasNext()) {
+            Map.Entry<K, V> e = i.next();
+            hc += e.hashCode();
+        }
+        return hc;
     }
 
     @Override
@@ -173,7 +184,11 @@ public class TSBHashTableDA<K, V> implements Map<K, V>, Cloneable, Serializable 
         if (key == null || value == null) {
             throw new NullPointerException("put(): Algun parametro fue null");
         }
+        if(((float) count/table.length )>= loadFactor) {this.reHash();}
+
         V old = null;
+
+
         Entry<K, V> x = this.searchForEntry(key);
 
         if (x != null) {
@@ -182,7 +197,7 @@ public class TSBHashTableDA<K, V> implements Map<K, V>, Cloneable, Serializable 
         } else {
 
             int indice = this.h(key);
-            indice = seachForIndex(indice);
+            indice = seachForIndex(indice, this.table);
 
 
             Entry<K, V> nuevo = new Entry<>(key, value);
@@ -194,11 +209,69 @@ public class TSBHashTableDA<K, V> implements Map<K, V>, Cloneable, Serializable 
 
     }
 
-    public int seachForIndex(int indice) {
+    protected void reHash(){
+        int oldLen = this.table.length;
+        int newLen = this.nextPrime(oldLen);
+
+        if(newLen > TSBHashTableDA.MAX_SIZE){
+            newLen = TSBHashTableDA.MAX_SIZE;
+        }
+
+        Object []  aux = new Object[newLen];
+        for (int i = 0; i < aux.length; i++) {
+            aux[i] = new Entry<K, V>();
+        }
+
+        this.modCount ++;
+
+        Iterator<Map.Entry<K, V>> i = this.entrySet().iterator();
+        while(i.hasNext()) {
+            Map.Entry<K,V> x = i.next();
+            K key = x.getKey();
+            int indice = this.h(key, aux.length);
+            indice = this.seachForIndex(indice,aux);
+            aux[indice] = x;
+        }
+        this.table = aux;
+    }
+
+    private int nextPrime(int N) {
+
+
+        if (N <= 1)
+            return 2;
+        int prime = N;
+        boolean found = false;
+        while (!found)
+        {
+            prime++;
+
+            if (isPrime(prime))
+                found = true;
+        }
+
+        return prime;
+    }
+
+    private boolean isPrime(int n) {
+        int sqrt = (int) Math.sqrt(n);
+
+
+        for (int i = 2; i <= sqrt; i++) {
+            if (n % i == 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+
+
+    public int seachForIndex(int indice, Object[] table) {
 
         for (int j = 0; ; j++) {
             indice = (indice + j * j) % table.length;
-            Entry<K, V> entry = (Entry) this.table[indice];
+            Entry<K, V> entry = (Entry) table[indice];
             if (!(entry.isClosed())) {
                 return indice;
             }
@@ -404,17 +477,13 @@ public class TSBHashTableDA<K, V> implements Map<K, V>, Cloneable, Serializable 
         }
 
         private class KeySetIterator implements Iterator<K> {
-            // índice de la lista actualmente recorrida...
+
             private int currentKey;
 
-            // índice de la lista anterior (si se requiere en remove())...
             private int lastKey;
 
-
-            // flag para controlar si remove() está bien invocado...
             private boolean nextOk;
 
-            // el valor que debería tener el modCount de la tabla completa...
             private int expectedModCount;
 
             public KeySetIterator() {
@@ -427,7 +496,6 @@ public class TSBHashTableDA<K, V> implements Map<K, V>, Cloneable, Serializable 
             @Override
             public boolean hasNext() {
 
-                // variable auxiliar t para simplificar accesos...
                 Object t[] = TSBHashTableDA.this.table;
 
                 if (TSBHashTableDA.this.isEmpty()) {
